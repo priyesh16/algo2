@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 
 #define LIMITER " "
@@ -30,7 +31,6 @@
 typedef struct node_s {
 	int vertex;
 	int cost;
-	int explored;
 	struct node_s *next;
 } node_t;
 
@@ -40,7 +40,7 @@ typedef struct list_s {
 
 typedef struct graph_s {
 	int tot_vertex;
-	list_t *adj_list;
+	list_t *adjlist;
 } graph_t;
 	
 char *readfile(char *filename, char ***arr, int *vertices, int *edges); 
@@ -49,9 +49,10 @@ void printgraph(graph_t *g);
 void addedge(graph_t *graph, int vertex1, int vertex2, int cost); 
 graph_t *graphinit(int lines); 
 void readline(char **linesarr, int line, int *vertex1, int *vertex2, int *cost); 
-node_t *findminkey(node_t *head);
-node_t *findprims(graph_t *g);
-void printmst(node_t *head); 
+node_t *findminkey(node_t **mst, node_t *head, int exploredcount);
+node_t **findprims(graph_t *g);
+void printmst(node_t **mst, int vertices); 
+void addinitvertex(node_t **head); 
 
 int main(int argc , char *argv[]) {
 	char    *filename;
@@ -60,7 +61,7 @@ int main(int argc , char *argv[]) {
 	int		i;
 	graph_t	*g;
 	int vertex1, vertex2, cost;
-	node_t *mst = NULL;
+	node_t **mst = NULL;
 
 	if (argc != 2) {
 		printf("Too few or many arguments \n");
@@ -71,10 +72,10 @@ int main(int argc , char *argv[]) {
 
 	readfile(filename, &linesarr, &vertices, &edges);
 
-	printf("vertces %d : %d \n", vertices, edges); 
+	printf("vertices %d : %d \n", vertices, edges); 
 
-	for(i = 0; i < edges; i++)
-		printf("mainarr %d : %s", i, linesarr[i]);
+	//for(i = 0; i < edges; i++)
+	//	printf("mainarr %d : %s", i, linesarr[i]);
 	
 	g = graphinit(vertices);
 
@@ -82,77 +83,122 @@ int main(int argc , char *argv[]) {
 		readline(linesarr, i, &vertex1, &vertex2, &cost);
 		addedge(g, vertex1, vertex2, cost);
 	}
+
+	addinitvertex(&g->adjlist[0].head);
+
+	printf(" \n ---------------------  \n ");
 	printgraph(g);
+	printf(" \n ---------------------  \n ");
 	mst = findprims(g);
-	printf("mst %p \n ", mst);
-	printmst(mst);
-	printf(" \n \n ");
+	printmst(mst, vertices);
+	printf(" \n ");
 }
 
-node_t *findminkey(node_t *head) {
+node_t *findminkey(node_t **mst, node_t *head, int exploredcount) {
 	node_t *tmpnode = head;
-	int		mincost;
+	node_t *savednode = NULL;
+	int		mincost = INT_MAX;
+	int		found = 0;
+	int		i;
 		 
 	while (tmpnode != NULL) {
-		mincost = tmpnode->cost;
-		tmpnode = tmpnode->next;
-		if (tmpnode != NULL && tmpnode->explored == 0 && tmpnode->cost < mincost) {
-		   mincost = tmpnode->cost;
+		found = 0;
+		/* if node already explored then continue */
+		printf("\t\t checking if vertex %d (%d) explored ", tmpnode->vertex, tmpnode->cost);
+		for (i = 0; i < exploredcount; i++) {
+			if (tmpnode->vertex == mst[i]->vertex) {
+				found = 1;
+				break;
+			}
 		}
+		if (found == 1) {
+			printf("--> yes \n ");
+			tmpnode = tmpnode->next;
+			continue;
+		}
+		else
+			printf("--> no \n ");
+
+		/* figure out min edge of the adjacent list */
+		if (tmpnode->cost < mincost) {
+			mincost = tmpnode->cost;
+			savednode = tmpnode;
+		}
+		tmpnode = tmpnode->next;
 	}
 
-	return tmpnode;
+	if (savednode != NULL)
+		printf("\t\tleast found in adjacent list vertex %d (%d) \n ", savednode->vertex, savednode->cost);
+	return savednode;
 }
 
-node_t *findprims(graph_t *g) {
-	node_t *mst = NULL;
+node_t **findprims(graph_t *g) {
+	node_t **mst = NULL;
 	int i = 0;
 	node_t *tmpnode = NULL;
-	node_t *savednode = NULL;
+	node_t *savednode;
 	int	exploredcount = 0;
-	node_t *msttmpnode = NULL;
 	int		minedge;
 	int		index;
+	int		vertex;
 
-	mst = (node_t *)malloc(g->tot_vertex * sizeof(node_t));
-	printf("mst %p \n ", mst);
+	mst = (node_t **)calloc(1, g->tot_vertex * sizeof(node_t *));
+	mst[0] = g->adjlist[0].head;
+	exploredcount++;
 
-	/* Start with any vertex (here first vertex) */
-	mst = g->adj_list[1].head;
+	while (exploredcount != g->tot_vertex) {
+		minedge = INT_MAX;
+		savednode = NULL;
 
-	while (exploredcount == g->tot_vertex) {
-		index = 0;	
-		msttmpnode = mst;
 		/* Get minimum of adjacent lists */
 		for(i = 0; i < exploredcount; i++) {
-			tmpnode = findminkey(msttmpnode);
+			vertex = mst[i]->vertex;
+			printf("\tfinding min for vertex %d \n ", vertex);
+			tmpnode = findminkey(mst, g->adjlist[vertex].head, exploredcount);
 
-			/* Among min. adjacent lists get min edge */
-			if (i == 0) {
+			if (tmpnode == NULL)
+				continue;
+
+			if (tmpnode->cost < minedge) {
 				minedge = tmpnode->cost;
 				savednode = tmpnode;
 			}
-			else if (tmpnode->cost < minedge) {
-				minedge = tmpnode->cost;
-				savednode = tmpnode;
-			}
-			msttmpnode	= msttmpnode->next;
 		}
-		/* Add the found min node to end of mst list */
-		msttmpnode->next = savednode;
-		exploredcount++;		
+		/* Add the found min node to end of mst list and mark explored */
+		printf("least found amongst list vertex %d (%d) \n ", savednode->vertex, savednode->cost);
+		mst[exploredcount++] = savednode;
 	}
 
 	return mst;
 }
 
-void printmst(node_t *head) {
-   node_t *tmpnode = head;
+void addinitvertex(node_t **head) {
+	/* Init vertex is used as a dummy vertex for the the graph just for
+	 * easy implementation. The first vertex with an edge zero (to itself) is
+	 * the init vertex. Since the graph vertex starts with 1, the zeroth array
+	 * is empty to fill this vertex. Also mst needs to start with a vertex, the
+	 * first explored vertex is the init vertex. 
+	 */
+	node_t *initvertex = (node_t *) malloc(sizeof(node_t)); 
+   
+	initvertex->vertex = 1;
+	/* findminkey should never get the cost of this vertex */
+	//initvertex.explored =  1;
+	*head = initvertex; 
 
-   while (tmpnode != NULL) {
-	  printf("vertex %d : cost %d \n", tmpnode->vertex, tmpnode->cost);
-	  tmpnode = tmpnode->next;
+	return;
+}
+	
+void printmst(node_t **mst, int vertices) {
+	int i = 0;
+	long long int sum = 0;
+
+	for (i = 0; i < vertices; i++) {
+		printf(" vertex %d (%d) \n", mst[i]->vertex, mst[i]->cost);
+		sum = sum + mst[i]->cost;
 	}
+	
+	printf("\n overall cost of MST is %lld \n", sum);
 }
 
 graph_t *graphinit(int lines) {
@@ -160,10 +206,10 @@ graph_t *graphinit(int lines) {
 	graph_t *graph = (graph_t *) malloc(sizeof(graph_t));
 
 	graph->tot_vertex = lines;
-	graph->adj_list = (list_t *) malloc(sizeof(list_t) * lines);
+	graph->adjlist = (list_t *) malloc(sizeof(list_t) * (lines + 1));
 
 	for (i = 0; i < lines; ++i) {
-	   graph->adj_list[i].head = NULL;
+	   graph->adjlist[i].head = NULL;
 	}
 
 	return graph;
@@ -173,8 +219,8 @@ void printgraph(graph_t *g) {
    int i;
    node_t *tmpnode;
    
-   for (i = 0; i < g->tot_vertex; i++) {
-		tmpnode = g->adj_list[i].head;
+   for (i = 0; i <= g->tot_vertex; i++) {
+		tmpnode = g->adjlist[i].head;
 		printf("\n adjacent list for %d \n", i);
 		while(tmpnode != NULL) {
 			printf(" -> %d : %d ", tmpnode->vertex, tmpnode->cost);
@@ -197,14 +243,14 @@ void readline(char **linesarr, int line, int *vertex1, int *vertex2, int *cost) 
 void addedge(graph_t *graph, int vertex1, int vertex2, int cost) {
 	node_t *destvertex, *srcvertex;
 	destvertex = createvertex(vertex1, cost);
-	destvertex->next = graph->adj_list[vertex2].head;
-	graph->adj_list[vertex2].head = destvertex;
+	destvertex->next = graph->adjlist[vertex2].head;
+	graph->adjlist[vertex2].head = destvertex;
 
 	/* Since the graph is undirected, add edge from dest to source also */
 
 	srcvertex = createvertex(vertex2, cost);
-	srcvertex->next = graph->adj_list[vertex1].head;
-	graph->adj_list[vertex1].head = srcvertex;
+	srcvertex->next = graph->adjlist[vertex1].head;
+	graph->adjlist[vertex1].head = srcvertex;
 }
 
 node_t *createvertex(int vertex, int cost) {
@@ -212,7 +258,6 @@ node_t *createvertex(int vertex, int cost) {
 
    newnode->vertex	 = vertex;
    newnode->cost	 = cost;
-   newnode->explored = 0;
    newnode->next	 = NULL;
 
    return newnode;

@@ -4,17 +4,18 @@
  *		-> A node contains vertex info
  *						-> next pointer 
  *						-> edge cost
- *		-> list of above nodes make the adjacency list with head pointer being
- *		the vertex under consideration
+ *		-> list of above nodes make the adjacency list 
  *		-> Graph is an array of all the adjacency lists.
  *			-> it contains total number of vertices also.
  *	-> add edges to vertex 
  *	-> print graph
  *
  * Prim's algo
- *  -> while all vertex are explored.
- *		-> pick any vertex and add to explored set
- *		-> find the lowest cost next vertex
+ *	-> initialize a MST as an array, with size equal to number of vertices
+ *  -> while all vertces are explored.
+ *		-> find minimum edge from an explored vertex in the graph's adjacency 
+ *			list to an unexplored vertex  
+ *		-> find the minimum edge amongst all such adjacency lists.
  *		-> add that vertex to explored set; 
  */
 

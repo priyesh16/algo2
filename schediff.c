@@ -53,6 +53,7 @@ int completiontime(char **mainarr, int lines) {
 	long long int sum = 0;
 	int weight;
 	int length;
+	int timetillnow = 0;
 	char *str = (char *)malloc(sizeof(char) * LINELENGTH);
 	int	i;
 
@@ -60,7 +61,8 @@ int completiontime(char **mainarr, int lines) {
 		strcpy(str, mainarr[i]);
 		weight = atoi(strtok(str, LIMITER));
 		length = atoi(strtok(NULL, LIMITER));
-		sum = sum + (weight * length);
+		sum = sum + (weight * (timetillnow + length));
+		timetillnow += length;
 	}
 	
 	return sum;

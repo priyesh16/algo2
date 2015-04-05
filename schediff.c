@@ -21,6 +21,7 @@
 
 int cmpfunc(const void *a, const void *b);
 char *readfile(char *filename, char ***arr, int *lines); 
+unsigned long long completiontime(char **mainarr, int lines); 
 
 int main(int argc , char *argv[]) {
 	char	*filename;
@@ -49,11 +50,11 @@ int main(int argc , char *argv[]) {
 
 }
 
-int completiontime(char **mainarr, int lines) {
-	long long int sum = 0;
+unsigned long long completiontime(char **mainarr, int lines) {
+	unsigned long long sum = 0;
 	int weight;
 	int length;
-	int timetillnow = 0;
+	unsigned long long timetillnow = 0;
 	char *str = (char *)malloc(sizeof(char) * LINELENGTH);
 	int	i;
 

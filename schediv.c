@@ -21,13 +21,14 @@
 
 int cmpfunc(const void *a, const void *b);
 char *readfile(char *filename, char ***arr, int *lines); 
+unsigned long long completiontime(char **mainarr, int lines); 
 
 int main(int argc , char *argv[]) {
 	char	*filename;
 	char	**mainarr;
 	int		i;
 	int		lines;
-	long long int sum;
+	unsigned long long sum;
 
 	if (argc != 2) {
 		printf("Too few or many arguments \n");
@@ -49,11 +50,11 @@ int main(int argc , char *argv[]) {
 
 }
 
-int completiontime(char **mainarr, int lines) {
-	long long int sum = 0;
+unsigned long long completiontime(char **mainarr, int lines) {
+	unsigned long long sum = 0;
 	int weight;
 	int length;
-	long long int timetillnow = 0;
+	unsigned long long timetillnow = 0;
 	char *str = (char *)malloc(sizeof(char) * LINELENGTH);
 	int	i;
 
@@ -91,8 +92,10 @@ int cmpfunc(const void *a, const void *b) {
 	length2 = atoi(strtok(NULL, LIMITER));
 	score2	= weight2 / length2;
 
+	/*
 	printf("string %s : score1 %f \n", *(char **)a, score1);
 	printf("string %s : score2 %f \n", *(char **)b, score2);
+	*/
 
 	if (score1 > score2)
 		return (-1);
